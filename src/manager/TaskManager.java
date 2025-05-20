@@ -53,23 +53,37 @@ public class TaskManager {
         return new ArrayList<>(subtasks.values());
     }
 
-    public void createSubtask(Subtask subtask) {
+    public int createSubtask(Subtask subtask) {
         if (subtask == null) {
-            return;
+            return -1;
         }
         Epic epic = epics.get((int) subtask.getEpicId());
-        if (epic == null)
-            return;
+        if (epic == null) {
+            return -1;
+        }
+
         int id = getNextId();
         subtask.setId(id);
         subtasks.put(id, subtask);
         epic.getSubtasks().add(subtask);
         updateEpicStatus(epic);
+        return id;
     }
 
     public void updateSubtask(Subtask subtask) {
-        subtasks.put(subtask.getId(), subtask);
-        Epic epic = epics.get((int) subtask.getEpicId());
+        if (subtask == null) {
+            return;
+        }
+        int id = subtask.getId();
+        Subtask storedSubtask = subtasks.get(id);
+        if (storedSubtask == null) {
+            return;
+        }
+        storedSubtask.setName(subtask.getName());
+        storedSubtask.setDescription(subtask.getDescription());
+        storedSubtask.setTaskStatus(subtask.getTaskStatus());
+
+        Epic epic = epics.get((int) storedSubtask.getEpicId());
         if (epic != null) {
             updateEpicStatus(epic);
         }
