@@ -1,14 +1,14 @@
 package tasks;
 
 public class Subtask extends Task {
-    private final long epicId;
+    private final Integer epicId;
 
-    public Subtask(String name, String description, TaskStatus taskStatus, long epicId) {
+    public Subtask(String name, String description, TaskStatus taskStatus, Integer epicId) {
         super(name, description, taskStatus);
         this.epicId = epicId;
     }
 
-    public long getEpicId() {
+    public Integer getEpicId() {
         return epicId;
     }
 
