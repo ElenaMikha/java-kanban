@@ -33,7 +33,6 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-
     public void testCreateEpic() {
         taskManager.createEpic(new Epic("Epic 1", "One subtask"));
         List<Epic> epics = taskManager.getEpics();
@@ -90,7 +89,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void subtasksAreEqualIfIdsAreEqual() {
+    void testSubtasksAreEqualIfIdsAreEqual() {
         Subtask sub1 = new Subtask("Sub1", "Desc1", TaskStatus.NEW, 5);
         Subtask sub2 = new Subtask("Sub2", "Desc2", TaskStatus.DONE, 5);
         sub1.setId(2);
@@ -99,7 +98,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void epicsAreEqualIfIdsAreEqual() {
+    void teatEpicsAreEqualIfIdsAreEqual() {
         Epic epic1 = new Epic("Epic1", "Desc1");
         Epic epic2 = new Epic("Epic2", "Desc2");
         epic1.setId(3);
@@ -108,7 +107,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void epicCannotContainItselfAsSubtask() {
+    void testEpicCannotContainItselfAsSubtask() {
         Epic epic = new Epic("Epic", "Epic that should not contain itself");
         int epicId = taskManager.createEpic(epic);
         Subtask invalidSubtask = new Subtask("Invalid", "Should not be added", TaskStatus.NEW, epicId);
@@ -116,26 +115,38 @@ public class InMemoryTaskManagerTest {
         int resultId = taskManager.createSubtask(invalidSubtask);
         assertEquals(-1, resultId);
         Epic updatedEpic = taskManager.getEpicById(epicId);
-        boolean hasSelfAsSubtask = updatedEpic.getSubtasks().stream()
-                .anyMatch(s -> s.getId().equals(epicId));
+        boolean hasSelfAsSubtask = false;
+        for (Subtask s : updatedEpic.getSubtasks()) {
+            if (s.getId().equals(epicId)) {
+                hasSelfAsSubtask = true;
+                break;
+            }
+        }
         assertFalse(hasSelfAsSubtask);
     }
 
     @Test
-    void SubtaskCannotContainItselfAsEpic() {
+    void testSubtaskCannotContainItselfAsEpic() {
         Epic epic = new Epic("Epic", "Epic for testing");
         int epicId = taskManager.createEpic(epic);
         Subtask subtask = new Subtask("Subtask", "Testing epic assignment", TaskStatus.NEW, epicId);
         int subtaskId = taskManager.createSubtask(subtask);
         Subtask createdSubtask = taskManager.getSubtaskById(subtaskId);
-        Subtask invalidSubtask = new Subtask("Invalid", "Should not assign itself as epic", TaskStatus.NEW, subtaskId);
+        Subtask invalidSubtask = new Subtask("Invalid", "Should not assign itself as epic",
+                TaskStatus.NEW, subtaskId);
         invalidSubtask.setId(subtaskId);
         int resultId = taskManager.createSubtask(invalidSubtask);
         assertEquals(-1, resultId);
+
         Epic epicWithSubtaskId = taskManager.getEpicById(subtaskId);
         if (epicWithSubtaskId != null) {
-            boolean hasSelfAsSubtask = epicWithSubtaskId.getSubtasks().stream()
-                    .anyMatch(s -> s.getId().equals(subtaskId));
+            boolean hasSelfAsSubtask = false;
+            for (Subtask s : epicWithSubtaskId.getSubtasks()) {
+                if (s.getId().equals(subtaskId)) {
+                    hasSelfAsSubtask = true;
+                    break;
+                }
+            }
             assertFalse(hasSelfAsSubtask);
         }
     }
@@ -143,7 +154,8 @@ public class InMemoryTaskManagerTest {
     @Test
     public void testGetDefaultTaskManagerNotNullAndWorks() {
         assertNotNull(taskManager);
-        int id = taskManager.createTask(new tasks.Task("Test task", "Description", tasks.TaskStatus.NEW));
+        int id = taskManager.createTask(new tasks.Task("Test task", "Description",
+                tasks.TaskStatus.NEW));
         assertTrue(id > 0);
         assertFalse(taskManager.getTasks().isEmpty());
     }
@@ -176,7 +188,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void historyManagerShouldKeepTaskAsItWasWhenAdded() {
+    void testHistoryManagerShouldKeepTaskAsItWasWhenAdded() {
         Task task = new Task("HistoryTask", "Initial description", TaskStatus.NEW);
         int id = taskManager.createTask(task);
         Task retrieved = taskManager.getTasksById(id);
