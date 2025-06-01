@@ -14,14 +14,14 @@ public class InMemoryTaskManagerTest {
     TaskManager taskManager = Managers.getDefault();
 
     @Test
-    public void testCreateTask() {
+    void testCreateTask() {
         taskManager.createTask(new Task("Task 1", "Description 1", TaskStatus.NEW));
         List<Task> tasks = taskManager.getTasks();
         assertEquals(1, tasks.size());
     }
 
     @Test
-    public void testAddAndGetTaskById() {
+    void testAddAndGetTaskById() {
         Task task = new Task("Task 1", "Simple task", TaskStatus.NEW);
         int taskId = taskManager.createTask(task);
         assertTrue(taskId > 0);
@@ -33,7 +33,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    public void testCreateEpic() {
+    void testCreateEpic() {
         taskManager.createEpic(new Epic("Epic 1", "One subtask"));
         List<Epic> epics = taskManager.getEpics();
         assertEquals(1, epics.size());
@@ -41,7 +41,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    public void testAddAndGetEpicById() {
+    void testAddAndGetEpicById() {
         Epic epic = new Epic("Epic 1", "Epic description");
         int epicId = taskManager.createEpic(epic);
         assertTrue(epicId > 0);
@@ -53,7 +53,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    public void testCreateSubtask() {
+    void testCreateSubtask() {
         Epic epic = new Epic("Epic", "One subtask");
         taskManager.createEpic(epic);
         int epicId = epic.getId();
@@ -63,7 +63,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    public void testAddAndGetSubtaskById() {
+    void testAddAndGetSubtaskById() {
         Epic epic = new Epic("Epic for subtask", "Epic description");
         int epicId = taskManager.createEpic(epic);
         assertTrue(epicId > 0);
@@ -98,7 +98,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void teatEpicsAreEqualIfIdsAreEqual() {
+    void testEpicsAreEqualIfIdsAreEqual() {
         Epic epic1 = new Epic("Epic1", "Desc1");
         Epic epic2 = new Epic("Epic2", "Desc2");
         epic1.setId(3);
@@ -152,7 +152,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    public void testGetDefaultTaskManagerNotNullAndWorks() {
+    void testGetDefaultTaskManagerNotNullAndWorks() {
         assertNotNull(taskManager);
         int id = taskManager.createTask(new tasks.Task("Test task", "Description",
                 tasks.TaskStatus.NEW));
@@ -161,7 +161,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void tasksWithAssignedIdAndGeneratedIdShouldNotConflict() {
+    void testTasksWithAssignedIdAndGeneratedIdShouldNotConflict() {
         Task taskWithId = new Task("TaskWithId", "Has preset id", TaskStatus.NEW);
         taskWithId.setId(100);
         int id1 = taskManager.createTask(taskWithId);
@@ -173,7 +173,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void taskShouldRemainUnchangedAfterAdding() {
+    void testTaskShouldRemainUnchangedAfterAdding() {
         Task originalTask = new Task("OriginalTask", "Original description", TaskStatus.NEW);
         String expectedName = originalTask.getName();
         String expectedDescription = originalTask.getDescription();

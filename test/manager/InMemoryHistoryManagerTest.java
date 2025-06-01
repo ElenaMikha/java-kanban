@@ -8,11 +8,12 @@ public class InMemoryHistoryManagerTest {
     HistoryManager historyManager = Managers.getDefaultHistory();
 
     @Test
-    public void testGetDefaultHistoryManagerNotNullAndWorks() {
+    void testGetDefaultHistoryManagerNotNullAndWorks() {
         assertNotNull(historyManager);
         tasks.Task task = new tasks.Task("History task", "Desc", tasks.TaskStatus.NEW);
         historyManager.add(task);
         assertFalse(historyManager.getHistory().isEmpty());
         assertEquals(task, historyManager.getHistory().get(0));
     }
+
 }

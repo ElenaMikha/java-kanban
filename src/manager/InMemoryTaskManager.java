@@ -21,7 +21,7 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     @Override
-    public ArrayList<Task> getTasks() {
+    public List<Task> getTasks() {
         return new ArrayList<>(tasks.values());
     }
 
@@ -63,7 +63,7 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     @Override
-    public ArrayList<Subtask> getSubtasks() {
+    public List<Subtask> getSubtasks() {
         return new ArrayList<>(subtasks.values());
     }
 
@@ -72,7 +72,7 @@ public class InMemoryTaskManager implements TaskManager {
         if (subtask == null) {
             return -1;
         }
-        Integer epicId = (int) subtask.getEpicId();
+        Integer epicId = subtask.getEpicId();
         if (epicId == null) {
             return -1;
         }
@@ -142,7 +142,7 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     @Override
-    public ArrayList<Epic> getEpics() {
+    public List<Epic> getEpics() {
         return new ArrayList<>(epics.values());
     }
 
@@ -185,7 +185,7 @@ public class InMemoryTaskManager implements TaskManager {
     }
 
     @Override
-    public ArrayList<Subtask> getSubtaskFromEpic(int epicId) {
+    public List<Subtask> getSubtaskFromEpic(int epicId) {
         Epic epic = epics.get(epicId);
         if (epic == null) {
             return new ArrayList<>();
@@ -224,10 +224,6 @@ public class InMemoryTaskManager implements TaskManager {
         } else {
             epic.setTaskStatus(TaskStatus.IN_PROGRESS);
         }
-    }
-
-    public void add(Task task) {
-        historyManager.add(task);
     }
 
     @Override
