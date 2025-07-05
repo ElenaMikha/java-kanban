@@ -210,4 +210,16 @@ public class InMemoryTaskManagerTest {
         assertEquals("Changed description", taskInHistory.getDescription());
         assertEquals(TaskStatus.DONE, taskInHistory.getTaskStatus());
     }
+    @Test
+    void testUpdateTaskChangesValues() {
+        Task task = new Task("Old Name", "Old Desc", TaskStatus.NEW);
+        int id = taskManager.createTask(task);
+        Task updatedTask = new Task("New Name", "New Desc", TaskStatus.DONE);
+        updatedTask.setId(id);
+        taskManager.updateTask(updatedTask);
+        Task result = taskManager.getTasksById(id);
+        assertEquals("New Name", result.getName());
+        assertEquals("New Desc", result.getDescription());
+        assertEquals(TaskStatus.DONE, result.getTaskStatus());
+    }
 }
