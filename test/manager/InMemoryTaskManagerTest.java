@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class InMemoryTaskManagerTest {
     TaskManager taskManager = Managers.getDefault();
+    HistoryManager historyManager = Managers.getDefaultHistory();
 
     @Test
     void testCreateTask() {
@@ -221,5 +222,20 @@ public class InMemoryTaskManagerTest {
         assertEquals("New Name", result.getName());
         assertEquals("New Desc", result.getDescription());
         assertEquals(TaskStatus.DONE, result.getTaskStatus());
+    }
+
+    @Test
+    void shouldRemoveTaskFromHistoryWhenTaskIsDeleted(){
+        Task task1 = new Task("Task 1", "Desc", TaskStatus.NEW);
+        Task task2 = new Task("Task 2", "Desc", TaskStatus.NEW);
+        taskManager.createTask(task1);
+        taskManager.createTask(task2);
+        taskManager.getTasksById(task1.getId());
+        taskManager.getTasksById(task2.getId());
+        taskManager.deleteTaskById(task1.getId());
+        List<Task> history = taskManager.getHistory();
+        assertEquals(1, history.size());
+        assertEquals(task2, history.get(0));
+
     }
 }
