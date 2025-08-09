@@ -209,6 +209,7 @@ public class InMemoryTaskManagerTest {
         assertEquals("Changed description", taskInHistory.getDescription());
         assertEquals(TaskStatus.DONE, taskInHistory.getTaskStatus());
     }
+
     @Test
     void testUpdateTaskChangesValues() {
         Task task = new Task("Old Name", "Old Desc", TaskStatus.NEW);
@@ -223,7 +224,7 @@ public class InMemoryTaskManagerTest {
     }
 
     @Test
-    void shouldRemoveTaskFromHistoryWhenTaskIsDeleted(){
+    void shouldRemoveTaskFromHistoryWhenTaskIsDeleted() {
         Task task1 = new Task("Task 1", "Desc", TaskStatus.NEW);
         Task task2 = new Task("Task 2", "Desc", TaskStatus.NEW);
         taskManager.createTask(task1);
