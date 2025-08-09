@@ -1,5 +1,7 @@
 package manager;
 
+import exception.ManagerSaveException;
+import exception.ManagerLoadException;
 import tasks.*;
 import java.io.*;
 import java.nio.file.Files;
@@ -7,19 +9,10 @@ import java.util.List;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final File file;
+    private static final String HEADER = "id,type,name,status,description,epic\n";
 
     public FileBackedTaskManager(File file) {
         this.file = file;
-    }
-
-    public static class ManagerSaveException extends RuntimeException {
-        public ManagerSaveException(String message) {
-            super(message);
-        }
-
-        public ManagerSaveException(String message, Throwable cause) {
-            super(message, cause);
-        }
     }
 
     @Override
@@ -99,7 +92,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
 
     protected void save() {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write("id,type,name,status,description,epic\n");
+            writer.write(HEADER);
 
             for (Task task : getTasks()) {
                 writer.write(toString(task) + "\n");
@@ -117,21 +110,14 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     }
 
     private String toString(Task task) {
-        String type;
         String epicId = "";
-
-        if (task instanceof Epic) {
-            type = "EPIC";
-        } else if (task instanceof Subtask) {
-            type = "SUBTASK";
+        if (task instanceof Subtask) {
             epicId = String.valueOf(((Subtask) task).getEpicId());
-        } else {
-            type = "TASK";
         }
 
         return String.join(",",
                 String.valueOf(task.getId()),
-                type,
+                task.getType().name(),
                 task.getName(),
                 task.getTaskStatus().name(),
                 task.getDescription(),
@@ -142,22 +128,22 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
     private static Task fromString(String value) {
         String[] fields = value.split(",");
         int id = Integer.parseInt(fields[0]);
-        String type = fields[1];
+        TaskType type = TaskType.valueOf(fields[1]);
         String name = fields[2];
         TaskStatus status = TaskStatus.valueOf(fields[3]);
         String description = fields[4];
 
         switch (type) {
-            case "TASK":
+            case TASK:
                 Task task = new Task(name, description, status);
                 task.setId(id);
                 return task;
-            case "EPIC":
+            case EPIC:
                 Epic epic = new Epic(name, description);
                 epic.setId(id);
                 epic.setTaskStatus(status);
                 return epic;
-            case "SUBTASK":
+            case SUBTASK:
                 int epicId = Integer.parseInt(fields[5]);
                 Subtask subtask = new Subtask(name, description, status, epicId);
                 subtask.setId(id);
@@ -167,26 +153,42 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         }
     }
 
+
     public static FileBackedTaskManager loadFromFile(File file) {
         FileBackedTaskManager manager = new FileBackedTaskManager(file);
         if (!file.exists()) return manager;
 
         try {
             List<String> lines = Files.readAllLines(file.toPath());
+            int maxId = 0;
             for (int i = 1; i < lines.size(); i++) {
                 String line = lines.get(i).trim();
                 if (line.isEmpty()) continue;
                 Task task = fromString(line);
+
+                int id = task.getId();
+                if (id > maxId) {
+                    maxId = id;
+                }
+
                 if (task instanceof Epic) {
-                    manager.createEpic((Epic) task);
+                    manager.epics.put(id, (Epic) task);
                 } else if (task instanceof Subtask) {
-                    manager.createSubtask((Subtask) task);
+                    manager.subtasks.put(id, (Subtask) task);
                 } else {
-                    manager.createTask(task);
+                    manager.tasks.put(id, task);
                 }
             }
+            for (Subtask subtask : manager.subtasks.values()) {
+                Epic epic = manager.epics.get(subtask.getEpicId());
+                if (epic != null) {
+                    epic.getSubtasks().add(subtask);
+                }
+            }
+            manager.generatorId = maxId + 1;
+
         } catch (IOException e) {
-            throw new ManagerSaveException("Ошибка при загрузке из файла", e);
+            throw new ManagerLoadException("Ошибка при загрузке из файла", e);
         }
 
         return manager;

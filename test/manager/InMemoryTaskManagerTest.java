@@ -12,7 +12,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class InMemoryTaskManagerTest {
     TaskManager taskManager = Managers.getDefault();
-    HistoryManager historyManager = Managers.getDefaultHistory();
 
     @Test
     void testCreateTask() {
@@ -132,7 +131,6 @@ public class InMemoryTaskManagerTest {
         int epicId = taskManager.createEpic(epic);
         Subtask subtask = new Subtask("Subtask", "Testing epic assignment", TaskStatus.NEW, epicId);
         int subtaskId = taskManager.createSubtask(subtask);
-        Subtask createdSubtask = taskManager.getSubtaskById(subtaskId);
         Subtask invalidSubtask = new Subtask("Invalid", "Should not assign itself as epic",
                 TaskStatus.NEW, subtaskId);
         invalidSubtask.setId(subtaskId);
@@ -235,7 +233,7 @@ public class InMemoryTaskManagerTest {
         taskManager.deleteTaskById(task1.getId());
         List<Task> history = taskManager.getHistory();
         assertEquals(1, history.size());
-        assertEquals(task2, history.get(0));
+        assertEquals(task2, history.getFirst());
 
     }
 }

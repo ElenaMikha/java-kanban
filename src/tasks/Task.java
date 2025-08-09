@@ -53,6 +53,10 @@ public class Task {
         this.taskStatus = taskStatus;
     }
 
+    public TaskType getType() {
+        return TaskType.TASK;
+    }
+
     @Override
     public String toString() {
         return "Task{" +
