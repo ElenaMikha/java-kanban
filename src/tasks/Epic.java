@@ -1,4 +1,5 @@
 package tasks;
+
 import java.util.ArrayList;
 
 public class Epic extends Task {
@@ -16,6 +17,11 @@ public class Epic extends Task {
     public void updateSubtask(Subtask subtask) {
         subtasks.remove(subtask);
         subtasks.add(subtask);
+    }
+
+    @Override
+    public TaskType getType() {
+        return TaskType.EPIC;
     }
 
     @Override

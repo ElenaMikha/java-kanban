@@ -3,7 +3,9 @@ package manager;
 import org.junit.jupiter.api.Test;
 import tasks.Task;
 import tasks.TaskStatus;
+
 import static org.junit.jupiter.api.Assertions.*;
+
 import java.util.List;
 
 public class InMemoryHistoryManagerTest {
@@ -35,7 +37,7 @@ public class InMemoryHistoryManagerTest {
         historyManager.remove(1);
         List<Task> history = historyManager.getHistory();
         assertEquals(1, history.size());
-        assertEquals(task2, history.get(0));
+        assertEquals(task2, history.getFirst());
     }
 
     @Test
@@ -55,6 +57,7 @@ public class InMemoryHistoryManagerTest {
         assertEquals(task2, history.get(1));
         assertEquals(task3, history.get(2));
     }
+
     @Test
     void testRemoveTail() {
         Task task1 = new Task("Task 1", "Desc", TaskStatus.NEW);
@@ -66,8 +69,9 @@ public class InMemoryHistoryManagerTest {
         historyManager.remove(2);
         List<Task> history = historyManager.getHistory();
         assertEquals(1, history.size());
-        assertEquals(task1, history.get(0));
+        assertEquals(task1, history.getFirst());
     }
+
     @Test
     void testRemoveHead() {
         Task task1 = new Task("Task 1", "Desc", TaskStatus.NEW);
@@ -79,6 +83,6 @@ public class InMemoryHistoryManagerTest {
         historyManager.remove(1);
         List<Task> history = historyManager.getHistory();
         assertEquals(1, history.size());
-        assertEquals(task2, history.get(0));
+        assertEquals(task2, history.getFirst());
     }
 }

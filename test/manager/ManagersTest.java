@@ -1,5 +1,7 @@
 package manager;
+
 import static org.junit.jupiter.api.Assertions.*;
+
 import org.junit.jupiter.api.Test;
 import tasks.Epic;
 import tasks.Subtask;
@@ -11,7 +13,7 @@ public class ManagersTest {
     HistoryManager history = Managers.getDefaultHistory();
 
     @Test
-     void TestGetDefaultShouldReturnInitializedTaskManagerForTask() {
+    void TestGetDefaultShouldReturnInitializedTaskManagerForTask() {
         assertNotNull(taskManager);
         Task task = new Task("Task", "Description", TaskStatus.NEW);
         int id = taskManager.createTask(task);
