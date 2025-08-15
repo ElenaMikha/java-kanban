@@ -1,37 +1,33 @@
 package manager;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tasks.*;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.List;
+
+import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class FileBackedTaskManagerTest {
-    private FileBackedTaskManager manager;
-    private File file;
+public class FileBackedTaskManagerTest extends TaskManagerTest<FileBackedTaskManager> {
+    @TempDir
+    Path tempDir;
 
-    @BeforeEach
-    void setUp() throws IOException {
-        file = File.createTempFile("tasks_test", ".csv");
-        Files.writeString(file.toPath(), "");
-        manager = new FileBackedTaskManager(file);
+    private File dataFile;
+
+    @Override
+    protected FileBackedTaskManager makeManager() {
+        dataFile = tempDir.resolve("tasks.csv").toFile();
+        return new FileBackedTaskManager(dataFile);
     }
 
     @Test
     void testSaveAndLoadEmptyFile() {
-
-        assertTrue(manager.getTasks().isEmpty());
-        assertTrue(manager.getEpics().isEmpty());
-        assertTrue(manager.getSubtasks().isEmpty());
-
         manager.save();
 
-        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(file);
+        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(dataFile);
         assertNotNull(loadedManager);
         assertTrue(loadedManager.getTasks().isEmpty());
         assertTrue(loadedManager.getEpics().isEmpty());
@@ -42,16 +38,13 @@ public class FileBackedTaskManagerTest {
     void testSaveAndLoadMultipleTasks() {
         Task task1 = new Task("Task 1", "Description 1", TaskStatus.NEW);
         Epic epic1 = new Epic("Epic 1", "Epic Description");
-        Subtask subtask1 = new Subtask("Subtask 1", "Subtask Description", TaskStatus.NEW, null);
 
         int taskId = manager.createTask(task1);
         int epicId = manager.createEpic(epic1);
-        subtask1 = new Subtask(subtask1.getName(), subtask1.getDescription(), subtask1.getTaskStatus(), epicId);
+        Subtask subtask1 = new Subtask("Subtask 1", "Subtask Description", TaskStatus.NEW, epicId);
         int subtaskId = manager.createSubtask(subtask1);
-
         manager.save();
-
-        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(file);
+        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(dataFile);
 
         // Проверяем количество задач
         assertEquals(1, loadedManager.getTasks().size());
@@ -105,7 +98,7 @@ public class FileBackedTaskManagerTest {
         manager.save();
 
         // Загружаем менеджер из файла
-        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(file);
+        FileBackedTaskManager loadedManager = FileBackedTaskManager.loadFromFile(dataFile);
 
         // Проверяем, что задачи загружены правильно
         Task loadedTask = loadedManager.getTasksById(taskId);

@@ -7,10 +7,12 @@ import tasks.*;
 import java.io.*;
 import java.nio.file.Files;
 import java.util.List;
+import java.time.Duration;
+import java.time.LocalDateTime;
 
 public class FileBackedTaskManager extends InMemoryTaskManager {
     private final File file;
-    private static final String HEADER = "id,type,name,status,description,epic\n";
+    private static final String HEADER = "id,type,name,status,description,epic,startTime,durationMinutes\n";
 
     public FileBackedTaskManager(File file) {
         this.file = file;
@@ -116,28 +118,42 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             epicId = String.valueOf(((Subtask) task).getEpicId());
         }
 
+        String start = task.getStartTime() != null ? task.getStartTime().toString() : "";
+        String durationMin = task.getDuration() != null ? String.valueOf(task.getDuration().toMinutes()) : "";
+
         return String.join(",",
                 String.valueOf(task.getId()),
                 task.getType().name(),
                 task.getName(),
                 task.getTaskStatus().name(),
                 task.getDescription(),
-                epicId
+                epicId,
+                start,
+                durationMin
         );
     }
 
     private static Task fromString(String value) {
-        String[] fields = value.split(",");
+        String[] fields = value.split(",", -1);
         int id = Integer.parseInt(fields[0]);
         TaskType type = TaskType.valueOf(fields[1]);
         String name = fields[2];
         TaskStatus status = TaskStatus.valueOf(fields[3]);
         String description = fields[4];
+        String epicField = fields.length > 5 ? fields[5] : "";
+        String startField = fields.length > 5 ? fields[6] : "";
+        String durationField = fields.length > 5 ? fields[7] : "";
+
+        LocalDateTime start = startField.isEmpty() ? null : LocalDateTime.parse(startField);
+        Duration dur = durationField.isEmpty() ? null : Duration.ofMinutes(Long.parseLong(durationField));
+
 
         switch (type) {
             case TASK:
                 Task task = new Task(name, description, status);
                 task.setId(id);
+                task.setStartTime(start);
+                task.setDuration(dur);
                 return task;
             case EPIC:
                 Epic epic = new Epic(name, description);
@@ -145,9 +161,11 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                 epic.setTaskStatus(status);
                 return epic;
             case SUBTASK:
-                int epicId = Integer.parseInt(fields[5]);
+                int epicId = Integer.parseInt(epicField);
                 Subtask subtask = new Subtask(name, description, status, epicId);
                 subtask.setId(id);
+                subtask.setStartTime(start);
+                subtask.setDuration(dur);
                 return subtask;
             default:
                 throw new IllegalArgumentException("Неизвестный тип задачи: " + type);
@@ -162,11 +180,12 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
         try {
             List<String> lines = Files.readAllLines(file.toPath());
             int maxId = 0;
+
             for (int i = 1; i < lines.size(); i++) {
                 String line = lines.get(i).trim();
                 if (line.isEmpty()) continue;
-                Task task = fromString(line);
 
+                Task task = fromString(line);
                 int id = task.getId();
                 if (id > maxId) {
                     maxId = id;
@@ -180,12 +199,39 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                     manager.tasks.put(id, task);
                 }
             }
+
             for (Subtask subtask : manager.subtasks.values()) {
                 Epic epic = manager.epics.get(subtask.getEpicId());
                 if (epic != null) {
                     epic.getSubtasks().add(subtask);
                 }
             }
+
+            for (Epic epic : manager.epics.values()) {
+
+                if (epic.getSubtasks().isEmpty()) {
+                    epic.setTaskStatus(TaskStatus.NEW);
+                } else {
+                    boolean allNew = true;
+                    boolean allDone = true;
+                    for (Subtask subtask : epic.getSubtasks()) {
+                        if (subtask.getTaskStatus() != TaskStatus.NEW) allNew = false;
+                        if (subtask.getTaskStatus() != TaskStatus.DONE) allDone = false;
+                    }
+                    if (allNew) epic.setTaskStatus(TaskStatus.NEW);
+                    else if (allDone) epic.setTaskStatus(TaskStatus.DONE);
+                    else epic.setTaskStatus(TaskStatus.IN_PROGRESS);
+                }
+                epic.recalculateTimeFromSubtasks();
+            }
+
+            for (Task task : manager.tasks.values()) {
+                manager.addToPrioritizedIfNeeded(task);
+            }
+            for (Subtask subtask : manager.subtasks.values()) {
+                manager.addToPrioritizedIfNeeded(subtask);
+            }
+
             manager.generatorId = maxId + 1;
 
         } catch (IOException e) {

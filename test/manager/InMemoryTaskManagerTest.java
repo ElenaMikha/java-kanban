@@ -10,8 +10,13 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class InMemoryTaskManagerTest {
+public class InMemoryTaskManagerTest extends TaskManagerTest<InMemoryTaskManager> {
     TaskManager taskManager = Managers.getDefault();
+
+    @Override
+    protected InMemoryTaskManager makeManager() {
+        return new InMemoryTaskManager();
+    }
 
     @Test
     void testCreateTask() {
