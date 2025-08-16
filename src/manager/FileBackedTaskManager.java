@@ -195,8 +195,10 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
                     manager.epics.put(id, (Epic) task);
                 } else if (task instanceof Subtask) {
                     manager.subtasks.put(id, (Subtask) task);
+                    manager.addToPrioritizedIfNeeded(task);
                 } else {
                     manager.tasks.put(id, task);
+                    manager.addToPrioritizedIfNeeded(task);
                 }
             }
 
@@ -208,28 +210,7 @@ public class FileBackedTaskManager extends InMemoryTaskManager {
             }
 
             for (Epic epic : manager.epics.values()) {
-
-                if (epic.getSubtasks().isEmpty()) {
-                    epic.setTaskStatus(TaskStatus.NEW);
-                } else {
-                    boolean allNew = true;
-                    boolean allDone = true;
-                    for (Subtask subtask : epic.getSubtasks()) {
-                        if (subtask.getTaskStatus() != TaskStatus.NEW) allNew = false;
-                        if (subtask.getTaskStatus() != TaskStatus.DONE) allDone = false;
-                    }
-                    if (allNew) epic.setTaskStatus(TaskStatus.NEW);
-                    else if (allDone) epic.setTaskStatus(TaskStatus.DONE);
-                    else epic.setTaskStatus(TaskStatus.IN_PROGRESS);
-                }
-                epic.recalculateTimeFromSubtasks();
-            }
-
-            for (Task task : manager.tasks.values()) {
-                manager.addToPrioritizedIfNeeded(task);
-            }
-            for (Subtask subtask : manager.subtasks.values()) {
-                manager.addToPrioritizedIfNeeded(subtask);
+                manager.updateEpicStatusAndTime(epic);
             }
 
             manager.generatorId = maxId + 1;
