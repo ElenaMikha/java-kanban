@@ -1,5 +1,6 @@
 package manager;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import tasks.Task;
 import tasks.TaskStatus;
@@ -10,6 +11,11 @@ import java.util.List;
 
 public class InMemoryHistoryManagerTest {
     HistoryManager historyManager = Managers.getDefaultHistory();
+
+    @BeforeEach
+    void setUp() {
+        historyManager = Managers.getDefaultHistory();
+    }
 
     @Test
     void testAddAndGetHistory() {
@@ -85,4 +91,62 @@ public class InMemoryHistoryManagerTest {
         assertEquals(1, history.size());
         assertEquals(task2, history.getFirst());
     }
+
+    @Test
+    void testEmptyHistory() {
+        assertTrue(historyManager.getHistory().isEmpty(), "История должна быть пустой");
+    }
+
+    @Test
+    void testDuplicatesMoveToTailAndStaySingle() {
+        Task a = new Task("A", "", TaskStatus.NEW);
+        a.setId(1);
+        Task b = new Task("B", "", TaskStatus.NEW);
+        b.setId(2);
+        Task c = new Task("C", "", TaskStatus.NEW);
+        c.setId(3);
+
+        historyManager.add(a);
+        historyManager.add(b);
+        historyManager.add(c);
+        historyManager.add(b);
+
+        var ids = historyManager.getHistory().stream().map(Task::getId).toList();
+        assertEquals(List.of(1, 3, 2), ids);
+    }
+
+    @Test
+    void testRemoveMiddle() {
+        Task a = new Task("A", "", TaskStatus.NEW);
+        a.setId(1);
+        Task b = new Task("B", "", TaskStatus.NEW);
+        b.setId(2);
+        Task c = new Task("C", "", TaskStatus.NEW);
+        c.setId(3);
+
+        historyManager.add(a);
+        historyManager.add(b);
+        historyManager.add(c);
+
+        historyManager.remove(2);
+        var ids = historyManager.getHistory().stream().map(Task::getId).toList();
+        assertEquals(List.of(1, 3), ids);
+    }
+
+    @Test
+    void testRemoveNonExistingIsNoOp() {
+        Task a = new Task("A", "", TaskStatus.NEW);
+        a.setId(1);
+        historyManager.add(a);
+        assertDoesNotThrow(() -> historyManager.remove(999));
+        var ids = historyManager.getHistory().stream().map(Task::getId).toList();
+        assertEquals(List.of(1), ids);
+    }
+
+    @Test
+    void testAddNullIsNoOp() {
+        assertDoesNotThrow(() -> historyManager.add(null));
+        assertTrue(historyManager.getHistory().isEmpty());
+    }
+
 }
