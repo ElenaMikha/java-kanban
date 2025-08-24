@@ -1,7 +1,6 @@
 package http;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import exception.IntersectionException;
 import exception.NotFoundException;
 import manager.TaskManager;
@@ -9,12 +8,11 @@ import tasks.Subtask;
 
 import java.io.IOException;
 
-public class SubtasksHandler extends BaseHttpHandler implements HttpHandler {
+public class SubtasksHandler extends BaseHttpHandler {
     private static final String BASE = "/subtasks";
-    private final TaskManager manager;
 
     public SubtasksHandler(TaskManager manager) {
-        this.manager = manager;
+        super(manager);
     }
 
     @Override
@@ -27,7 +25,16 @@ public class SubtasksHandler extends BaseHttpHandler implements HttpHandler {
                 switch (method) {
                     case "GET" -> sendText(h, gson.toJson(manager.getSubtasks()));
                     case "POST" -> {
-                        Subtask body = gson.fromJson(readBody(h), Subtask.class);
+                        String bodyStr = readBody(h);
+                        if (bodyStr == null || bodyStr.isBlank()) {
+                            sendBadRequest(h, "Request body is empty");
+                            return;
+                        }
+                        Subtask body = gson.fromJson(bodyStr, Subtask.class);
+                        if (body == null) {
+                            sendBadRequest(h, "Subtask is null");
+                            return;
+                        }
                         if (body.getId() == null) manager.createSubtask(body);
                         else manager.updateSubtask(body);
                         sendCreated(h);

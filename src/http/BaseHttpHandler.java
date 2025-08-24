@@ -2,6 +2,8 @@ package http;
 
 import com.google.gson.*;
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import manager.TaskManager;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +11,13 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.LocalDateTime;
 
-public class BaseHttpHandler {
+public abstract class BaseHttpHandler implements HttpHandler {
+    protected final TaskManager manager;
+
+    protected BaseHttpHandler(TaskManager manager) {
+        this.manager = manager;
+    }
+
     protected final Gson gson = new GsonBuilder()
             .registerTypeAdapter(LocalDateTime.class,
                     (JsonDeserializer<LocalDateTime>) (json, type, ctx)
@@ -24,7 +32,6 @@ public class BaseHttpHandler {
                     (JsonSerializer<Duration>) (src, type, ctx)
                             -> new JsonPrimitive(src.toString()))
             .create();
-
 
     protected void sendText(HttpExchange h, String text) throws IOException {
         byte[] resp = text.getBytes(StandardCharsets.UTF_8);
@@ -53,6 +60,11 @@ public class BaseHttpHandler {
     protected void sendInternalError(HttpExchange h, String message) throws IOException {
         sendError(h, 500, message == null ? "Internal Server Error" : message);
     }
+
+    protected void sendBadRequest(HttpExchange h, String message) throws IOException {
+        sendError(h, 400, message == null ? "Bad Request" : message);
+    }
+
 
     private void sendError(HttpExchange h, int code, String message) throws IOException {
         String safe = message.replace("\"", "\\\"");

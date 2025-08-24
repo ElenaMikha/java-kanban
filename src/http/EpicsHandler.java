@@ -1,18 +1,17 @@
 package http;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import exception.NotFoundException;
 import manager.TaskManager;
 import tasks.Epic;
 
 import java.io.IOException;
 
-public class EpicsHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
+public class EpicsHandler extends BaseHttpHandler {
+    private static final String BASE = "/epics";
 
     public EpicsHandler(TaskManager manager) {
-        this.manager = manager;
+        super(manager);
     }
 
     @Override
@@ -21,51 +20,84 @@ public class EpicsHandler extends BaseHttpHandler implements HttpHandler {
         String method = h.getRequestMethod();
 
         try {
+            String rest = path.startsWith(BASE) ? path.substring(BASE.length()) : "";
+            if (rest.startsWith("/")) rest = rest.substring(1);
+
             switch (method) {
                 case "GET" -> {
-                    if ("/epics".equals(path)) {
+                    if (rest.isEmpty()) {
                         sendText(h, gson.toJson(manager.getEpics()));
                         return;
                     }
-                    if (path.startsWith("/epics/")) {
-                        String rest = path.substring("/epics/".length());
-                        int slash = rest.indexOf('/');
-                        if (slash == -1) {
+                    int slash = rest.indexOf('/');
+                    if (slash == -1) {
+                        try {
                             int id = Integer.parseInt(rest);
                             sendText(h, gson.toJson(manager.getEpicById(id)));
-                        } else {
+                        } catch (NumberFormatException ex) {
+                            sendNotFound(h, "Invalid epic id");
+                        }
+                    } else {
+                        try {
                             int id = Integer.parseInt(rest.substring(0, slash));
                             String tail = rest.substring(slash + 1);
                             if ("subtasks".equals(tail)) {
                                 sendText(h, gson.toJson(manager.getSubtaskFromEpic(id)));
                             } else {
                                 sendNotFound(h, "Unknown path");
+
                             }
+                        } catch (NumberFormatException ex) {
+                            sendNotFound(h, "Invalid epic id");
+
                         }
-                        return;
+
                     }
-                    sendNotFound(h, "Unknown path");
+
                 }
                 case "POST" -> {
-                    if (!"/epics".equals(path)) {
+                    if (!rest.isEmpty()) {
                         sendNotFound(h, "Unknown path");
                         return;
                     }
-                    Epic body = gson.fromJson(readBody(h), Epic.class);
-                    if (body.getId() == null) manager.createEpic(body);
-                    else manager.updateEpic(body);
+                    String bodyStr = readBody(h);
+                    if (bodyStr == null || bodyStr.isBlank()) {
+                        sendBadRequest(h, "Request body is empty");
+                        return;
+                    }
+                    Epic body = gson.fromJson(bodyStr, Epic.class);
+
+                    if (body == null) {
+                        sendBadRequest(h, "Epic is null");
+                        return;
+                    }
+                    if (body.getId() != null) {
+                        sendBadRequest(h, "Epic id must be null on create");
+                        return;
+                    }
+
+                    manager.createEpic(body);
                     sendCreated(h);
                 }
                 case "DELETE" -> {
-                    if (path.startsWith("/epics/")) {
-                        int id = Integer.parseInt(path.substring("/epics/".length()));
+                    if (rest.isEmpty() || rest.contains("/")) {
+                        sendNotFound(h, "Unknown path");
+                        return;
+                    }
+
+                    try {
+                        int id = Integer.parseInt(rest);
                         manager.deleteEpicById(id);
                         sendText(h, "{\"result\":\"deleted\"}");
-                    } else {
-                        sendNotFound(h, "Unknown path");
+
+                    } catch (NumberFormatException ex) {
+                        sendNotFound(h, "Invalid epic id");
+
+
                     }
+
                 }
-                case null, default -> sendInternalError(h, "Method not supported");
+                default -> sendInternalError(h, "Method not supported");
             }
         } catch (NotFoundException e) {
             sendNotFound(h, e.getMessage());

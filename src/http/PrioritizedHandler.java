@@ -1,23 +1,20 @@
 package http;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import manager.TaskManager;
 
 import java.io.IOException;
 
-public class PrioritizedHandler extends BaseHttpHandler implements HttpHandler {
-    private final TaskManager manager;
+public class PrioritizedHandler extends BaseHttpHandler {
 
     public PrioritizedHandler(TaskManager manager) {
-        this.manager = manager;
+        super(manager);
     }
 
     @Override
     public void handle(HttpExchange h) throws IOException {
-        String path = h.getRequestURI().getPath();
-        if (!"GET".equals(h.getRequestMethod()) || !"/prioritized".equals(path)) {
-            sendNotFound(h, "Unknown path or method");
+        if (!"GET".equals(h.getRequestMethod())) {
+            sendNotFound(h, "Unknown method");
             return;
         }
         try {

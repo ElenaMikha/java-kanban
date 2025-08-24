@@ -30,13 +30,13 @@ public class EpicsHandlerTest extends BaseHttpHandlerTest {
     }
 
     @Test
-    void updateEpicViaPost201AndUpdated() throws Exception {
+    void postEpicWithIdShouldReturn400() throws Exception {
         int id = manager.createEpic(new Epic("E1", "d"));
         Epic upd = new Epic("E1-upd", "d2");
         upd.setId(id);
         HttpResponse<String> resp = httpPost("/epics", gson.toJson(upd));
-        assertEquals(201, resp.statusCode());
-        assertEquals("E1-upd", manager.getEpicById(id).getName());
+        assertEquals(400, resp.statusCode());
+        assertEquals("E1", manager.getEpicById(id).getName());
     }
 
     @Test

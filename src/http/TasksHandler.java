@@ -1,7 +1,6 @@
 package http;
 
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import exception.IntersectionException;
 import exception.NotFoundException;
 import manager.TaskManager;
@@ -10,12 +9,12 @@ import tasks.Task;
 import java.io.IOException;
 import java.util.List;
 
-public class TasksHandler extends BaseHttpHandler implements HttpHandler {
+public class TasksHandler extends BaseHttpHandler {
     private static final String BASE = "/tasks";
-    private final TaskManager manager;
+
 
     public TasksHandler(TaskManager manager) {
-        this.manager = manager;
+        super(manager);
     }
 
     @Override
@@ -31,7 +30,16 @@ public class TasksHandler extends BaseHttpHandler implements HttpHandler {
                         sendText(h, gson.toJson(list));
                     }
                     case "POST" -> {
-                        Task body = gson.fromJson(readBody(h), Task.class);
+                        String bodyStr = readBody(h);
+                        if (bodyStr == null || bodyStr.isBlank()) {
+                            sendBadRequest(h, "Request body is empty");
+                            return;
+                        }
+                        Task body = gson.fromJson(bodyStr, Task.class);
+                        if (body == null) {
+                            sendBadRequest(h, "Task is null");
+                            return;
+                        }
                         if (body.getId() == null) manager.createTask(body);
                         else manager.updateTask(body);
                         sendCreated(h);
