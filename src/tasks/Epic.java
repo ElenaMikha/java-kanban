@@ -5,24 +5,32 @@ import java.util.ArrayList;
 import java.time.Duration;
 
 public class Epic extends Task {
-    private final ArrayList<Subtask> subtasks;
+    private ArrayList<Subtask> subtasks = new ArrayList<>();
     protected LocalDateTime endTime;
 
     public Epic(String name, String description) {
         super(name, description, TaskStatus.NEW);
-        this.subtasks = new ArrayList<>();
         this.duration = null;
         this.startTime = null;
         this.endTime = null;
     }
 
     public ArrayList<Subtask> getSubtasks() {
+        if (subtasks == null) {
+            subtasks = new ArrayList<>();
+        }
         return subtasks;
     }
 
+    public void setSubtasks(ArrayList<Subtask> subtasks) {
+        this.subtasks = (subtasks == null) ? new ArrayList<>() : subtasks;
+    }
+
     public void updateSubtask(Subtask subtask) {
-        subtasks.remove(subtask);
-        subtasks.add(subtask);
+        ArrayList<Subtask> list = getSubtasks();
+        list.remove(subtask);
+        list.add(subtask);
+
     }
 
     @Override
@@ -36,7 +44,8 @@ public class Epic extends Task {
     }
 
     public void recalculateTimeFromSubtasks() {
-        if (subtasks.isEmpty()) {
+        ArrayList<Subtask> list = getSubtasks();
+        if (list.isEmpty()) {
             this.duration = Duration.ZERO;
             this.startTime = null;
             this.endTime = null;
@@ -47,7 +56,7 @@ public class Epic extends Task {
         LocalDateTime minStart = null;
         LocalDateTime maxEnd = null;
 
-        for (Subtask s : subtasks) {
+        for (Subtask s : list) {
             if (s.getDuration() != null) {
                 sum = sum.plus(s.getDuration());
             }
@@ -74,7 +83,7 @@ public class Epic extends Task {
     @Override
     public String toString() {
         return "Epic{" +
-                "subtasks=" + subtasks +
+                "subtasks=" + getSubtasks() +
                 ", id=" + id +
                 ", name='" + name + '\'' +
                 ", description='" + description + '\'' +

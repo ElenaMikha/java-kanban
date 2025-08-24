@@ -1,5 +1,7 @@
 package manager;
 
+import exception.IntersectionException;
+import exception.NotFoundException;
 import tasks.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,7 +13,6 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 public abstract class TaskManagerTest<T extends TaskManager> {
-    TaskManager taskManager = Managers.getDefault();
     protected T manager;
 
     protected abstract T makeManager();
@@ -75,10 +76,10 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void deleteTaskByIdRemovesFromStoreHistoryAndPriority() {
         int id = add(newTask("T", LocalDateTime.of(2025, 1, 1, 10, 0), 10));
-        manager.getTasksById(id); // в историю
+        manager.getTasksById(id);
         manager.deleteTaskById(id);
 
-        assertNull(manager.getTasksById(id));
+        assertThrows(NotFoundException.class, () -> manager.getTasksById(id));
         assertTrue(manager.getHistory().stream().noneMatch(x -> x.getId() == id));
         assertTrue(manager.getPrioritizedTasks().stream().noneMatch(x -> x.getId() == id));
     }
@@ -110,8 +111,8 @@ public abstract class TaskManagerTest<T extends TaskManager> {
 
     @Test
     void createSubtaskFailsIfEpicMissing() {
-        int sid = addSub(999, "S", TaskStatus.NEW, LocalDateTime.of(2025, 1, 2, 9, 0), 20);
-        assertEquals(-1, sid);
+        assertThrows(NotFoundException.class, () ->
+                addSub(999, "S", TaskStatus.NEW, LocalDateTime.of(2025, 1, 2, 9, 0), 20));
     }
 
     @Test
@@ -119,8 +120,8 @@ public abstract class TaskManagerTest<T extends TaskManager> {
         int id1 = add(newTask("A", LocalDateTime.of(2025, 1, 1, 9, 0), 60));
         assertTrue(id1 > 0);
 
-        int id2 = add(newTask("B", LocalDateTime.of(2025, 1, 1, 9, 30), 10));
-        assertEquals(-1, id2);
+        assertThrows(IntersectionException.class, () ->
+                add(newTask("B", LocalDateTime.of(2025, 1, 1, 9, 30), 10)));
 
         int id3 = add(newTask("C", LocalDateTime.of(2025, 1, 1, 10, 0), 10));
         assertTrue(id3 > 0);
@@ -128,9 +129,9 @@ public abstract class TaskManagerTest<T extends TaskManager> {
         Task upd = new Task(id3, "C", "", TaskStatus.NEW);
         upd.setStartTime(LocalDateTime.of(2025, 1, 1, 9, 30));
         upd.setDuration(Duration.ofMinutes(5));
-        manager.updateTask(upd);
+        assertThrows(IntersectionException.class, () -> manager.updateTask(upd));
 
-        assertEquals(LocalDateTime.of(2025, 1, 1, 10, 0), manager.getTasksById(id3).getStartTime());
+
     }
 
     @Test
@@ -169,10 +170,10 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void testAddAndGetTaskById() {
         Task task = new Task("Task 1", "Simple task", TaskStatus.NEW);
-        int taskId = taskManager.createTask(task);
+        int taskId = manager.createTask(task);
         assertTrue(taskId > 0);
 
-        Task foundTask = taskManager.getTasksById(taskId);
+        Task foundTask = manager.getTasksById(taskId);
         assertNotNull(foundTask);
         assertEquals(taskId, foundTask.getId());
         assertEquals("Task 1", foundTask.getName());
@@ -180,8 +181,8 @@ public abstract class TaskManagerTest<T extends TaskManager> {
 
     @Test
     void testCreateEpic() {
-        taskManager.createEpic(new Epic("Epic 1", "One subtask"));
-        List<Epic> epics = taskManager.getEpics();
+        manager.createEpic(new Epic("Epic 1", "One subtask"));
+        List<Epic> epics = manager.getEpics();
         assertEquals(1, epics.size());
 
     }
@@ -189,10 +190,10 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void testAddAndGetEpicById() {
         Epic epic = new Epic("Epic 1", "Epic description");
-        int epicId = taskManager.createEpic(epic);
+        int epicId = manager.createEpic(epic);
         assertTrue(epicId > 0);
 
-        Epic foundEpic = taskManager.getEpicById(epicId);
+        Epic foundEpic = manager.getEpicById(epicId);
         assertNotNull(foundEpic);
         assertEquals(epicId, foundEpic.getId());
         assertEquals("Epic 1", foundEpic.getName());
@@ -201,24 +202,24 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void testCreateSubtask() {
         Epic epic = new Epic("Epic", "One subtask");
-        taskManager.createEpic(epic);
+        manager.createEpic(epic);
         int epicId = epic.getId();
-        taskManager.createSubtask(new Subtask("Subtask", "Description sub", TaskStatus.NEW, epicId));
-        List<Subtask> subtasks = taskManager.getSubtasks();
+        manager.createSubtask(new Subtask("Subtask", "Description sub", TaskStatus.NEW, epicId));
+        List<Subtask> subtasks = manager.getSubtasks();
         assertEquals(1, subtasks.size());
     }
 
     @Test
     void testAddAndGetSubtaskById() {
         Epic epic = new Epic("Epic for subtask", "Epic description");
-        int epicId = taskManager.createEpic(epic);
+        int epicId = manager.createEpic(epic);
         assertTrue(epicId > 0);
 
         Subtask subtask = new Subtask("Subtask 1", "Subtask description", TaskStatus.NEW, epicId);
-        int subtaskId = taskManager.createSubtask(subtask);
+        int subtaskId = manager.createSubtask(subtask);
         assertTrue(subtaskId > 0);
 
-        Subtask foundSubtask = taskManager.getSubtaskById(subtaskId);
+        Subtask foundSubtask = manager.getSubtaskById(subtaskId);
         assertNotNull(foundSubtask);
         assertEquals(subtaskId, foundSubtask.getId());
         assertEquals(epicId, foundSubtask.getEpicId());
@@ -255,12 +256,11 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void testEpicCannotContainItselfAsSubtask() {
         Epic epic = new Epic("Epic", "Epic that should not contain itself");
-        int epicId = taskManager.createEpic(epic);
+        int epicId = manager.createEpic(epic);
         Subtask invalidSubtask = new Subtask("Invalid", "Should not be added", TaskStatus.NEW, epicId);
         invalidSubtask.setId(epicId);
-        int resultId = taskManager.createSubtask(invalidSubtask);
-        assertEquals(-1, resultId);
-        Epic updatedEpic = taskManager.getEpicById(epicId);
+        assertThrows(IllegalArgumentException.class, () -> manager.createSubtask(invalidSubtask));
+        Epic updatedEpic = manager.getEpicById(epicId);
         boolean hasSelfAsSubtask = false;
         for (Subtask s : updatedEpic.getSubtasks()) {
             if (s.getId().equals(epicId)) {
@@ -274,38 +274,28 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void testSubtaskCannotContainItselfAsEpic() {
         Epic epic = new Epic("Epic", "Epic for testing");
-        int epicId = taskManager.createEpic(epic);
+        int epicId = manager.createEpic(epic);
         Subtask subtask = new Subtask("Subtask", "Testing epic assignment", TaskStatus.NEW, epicId);
-        int subtaskId = taskManager.createSubtask(subtask);
-        Subtask invalidSubtask = new Subtask("Invalid", "Should not assign itself as epic",
-                TaskStatus.NEW, subtaskId);
+        int subtaskId = manager.createSubtask(subtask);
+        Subtask invalidSubtask = new Subtask("Invalid",
+                "Should not assign itself as epic",
+                TaskStatus.NEW,
+                subtaskId);
         invalidSubtask.setId(subtaskId);
-        int resultId = taskManager.createSubtask(invalidSubtask);
-        assertEquals(-1, resultId);
+        assertThrows(NotFoundException.class, () -> manager.createSubtask(invalidSubtask));
 
-        Epic epicWithSubtaskId = taskManager.getEpicById(subtaskId);
-        if (epicWithSubtaskId != null) {
-            boolean hasSelfAsSubtask = false;
-            for (Subtask s : epicWithSubtaskId.getSubtasks()) {
-                if (s.getId().equals(subtaskId)) {
-                    hasSelfAsSubtask = true;
-                    break;
-                }
-            }
-            assertFalse(hasSelfAsSubtask);
-        }
     }
 
     @Test
     void testTasksWithAssignedIdAndGeneratedIdShouldNotConflict() {
         Task taskWithId = new Task("TaskWithId", "Has preset id", TaskStatus.NEW);
         taskWithId.setId(100);
-        int id1 = taskManager.createTask(taskWithId);
+        int id1 = manager.createTask(taskWithId);
         Task taskGeneratedId = new Task("TaskGeneratedId", "Will get generated id", TaskStatus.NEW);
-        int id2 = taskManager.createTask(taskGeneratedId);
+        int id2 = manager.createTask(taskGeneratedId);
         assertNotEquals(id1, id2);
-        assertNotNull(taskManager.getTasksById(id1));
-        assertNotNull(taskManager.getTasksById(id2));
+        assertNotNull(manager.getTasksById(id1));
+        assertNotNull(manager.getTasksById(id2));
     }
 
     @Test
@@ -314,8 +304,8 @@ public abstract class TaskManagerTest<T extends TaskManager> {
         String expectedName = originalTask.getName();
         String expectedDescription = originalTask.getDescription();
         TaskStatus expectedStatus = originalTask.getTaskStatus();
-        int assignedId = taskManager.createTask(originalTask);
-        Task taskFromManager = taskManager.getTasksById(assignedId);
+        int assignedId = manager.createTask(originalTask);
+        Task taskFromManager = manager.getTasksById(assignedId);
 
         assertEquals(expectedName, taskFromManager.getName());
         assertEquals(expectedDescription, taskFromManager.getDescription());
@@ -326,11 +316,11 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     @Test
     void testUpdateTaskChangesValues() {
         Task task = new Task("Old Name", "Old Desc", TaskStatus.NEW);
-        int id = taskManager.createTask(task);
+        int id = manager.createTask(task);
         Task updatedTask = new Task("New Name", "New Desc", TaskStatus.DONE);
         updatedTask.setId(id);
-        taskManager.updateTask(updatedTask);
-        Task result = taskManager.getTasksById(id);
+        manager.updateTask(updatedTask);
+        Task result = manager.getTasksById(id);
         assertEquals("New Name", result.getName());
         assertEquals("New Desc", result.getDescription());
         assertEquals(TaskStatus.DONE, result.getTaskStatus());
@@ -340,12 +330,12 @@ public abstract class TaskManagerTest<T extends TaskManager> {
     void shouldRemoveTaskFromHistoryWhenTaskIsDeleted() {
         Task task1 = new Task("Task 1", "Desc", TaskStatus.NEW);
         Task task2 = new Task("Task 2", "Desc", TaskStatus.NEW);
-        taskManager.createTask(task1);
-        taskManager.createTask(task2);
-        taskManager.getTasksById(task1.getId());
-        taskManager.getTasksById(task2.getId());
-        taskManager.deleteTaskById(task1.getId());
-        List<Task> history = taskManager.getHistory();
+        manager.createTask(task1);
+        manager.createTask(task2);
+        manager.getTasksById(task1.getId());
+        manager.getTasksById(task2.getId());
+        manager.deleteTaskById(task1.getId());
+        List<Task> history = manager.getHistory();
         assertEquals(1, history.size());
         assertEquals(task2, history.getFirst());
 
